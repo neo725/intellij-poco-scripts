@@ -19,6 +19,12 @@ typeMapping = [
 
 notNullableTypes = [ "string", "byte[]" ]
 
+specialWords = ["No", "Id", "Name", "By", "Tag", "Product", "Belong", "Type", "Direct", "Sale", "Price", "Unit",
+  "Installment", "Date", "Time", "Value", "User", "Rate", "Arrival", "Qty", "Supply", "Day", "Upload", "Point", "Status",
+  "Color", "Image", "Class", "Code", "Warehouse", "Length", "Width", "Height", "Weight", "Attribute", "Delivery", "Transport",
+  "exchangeYn", "Exchange", "Frequency", "Format",
+  "Invo", "Recycl", "Spec", "Desc", "Info"]
+
 tempString = '';
 
 SELECTION.filter { it instanceof DasTable && it.getKind() == ObjectKind.TABLE }.each { generate(it) }
@@ -40,23 +46,25 @@ def generate(table) {
 }
 
 def generate(out, className, fields, table) {
-    out.println "   public class $className"
-    out.println "   {"
+    out.println "public class $className"
+    out.println "{"
 
     fields.each() {
-
-        if (it.primarykey)
-        out.println "       [Key]"
-
         if (it.comment != "")
         {
-            out.println "";
-            out.println "    //${it.comment}";
+            out.println "    /// <summary>";
+            out.println "    /// ${it.comment}";
+            out.println "    /// </summary>";
         }
 
-        out.println "       public ${it.type} ${it.name} { get; set; }"
+        if (it.primarykey)
+        out.println "    [Key]"
+
+        out.println "    public ${it.type} ${it.name} { get; set; }"
+        out.println ""
     }
-    out.println "   }"
+    out.println "}"
+    
 }
 
 def calcFields(table) {
@@ -77,12 +85,16 @@ def calcFields(table) {
                            primarykey : pk != null && pk != "" && pk.contains("(${col.getName()})") ? true : false,
                            colname : col.getName(),
                            spec : spec,
-                           name : pascalCase(col.getName()),
+                           name : replaceSpecialWord(pascalCase(col.getName())),
                            type : typeStr + nullable,
                            comment : col.comment ? col.comment : ""]]
     }
 }
-
+def replaceSpecialWord(str) {
+  Closure closure = { specialWord -> str = str.replaceAll("(?i)" + Case.LOWER.apply(specialWord), specialWord) }
+  specialWords.each (closure)
+  return str
+}
 def pascalCase(str) {
     com.intellij.psi.codeStyle.NameUtil.splitNameIntoWords(str)
             .collect { Case.LOWER.apply(it).capitalize() }
